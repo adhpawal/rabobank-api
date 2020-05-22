@@ -1,9 +1,10 @@
-var request = require('request');
-var fs = require('fs'); 
+const request = require('request');
+const fs = require('fs'); 
+const querystring = require('querystring');
+const URLSafeBase64 = require('urlsafe-base64');
 
 exports.list_all_transactions = function(req, res) {
-    console.log("Pawal")
-    var headers = {
+    let headers = {
         'accept': 'application/json',
         'authorization': 'Bearer ' + req.query.access_token,
         'date': 'Tue, 18 Sep 2018 09:51:01 GMT',
@@ -15,25 +16,53 @@ exports.list_all_transactions = function(req, res) {
         'x-request-id': '95126d8f-ae9d-4ac3-ac9e-c357dcd78811'
     };
     
-    var options = {
+    let options = {
         url: 'https://api-sandbox.rabobank.nl/openapi/sandbox/payments/account-information/ais/v3/accounts',
         headers: headers,
         key: fs.readFileSync('key.pem'),
         cert: fs.readFileSync('cert.pem'), 
     };
 
-    console.log("Pawal")
     request(options, callback);
-    console.log("Pawal")
 
     function callback(error, response, body) {
         if (!error && response.statusCode == 200) {
-            console.log(body)
-            res.json(JSON.parse(body));
+            let results = fetchAllTransactions(JSON.parse(body))
+            console.log(results)
+            res.json(results)
         }else{
-            console.log(body)
             res.json(JSON.parse(body));
         }
     }
-    
+
+    function fetchAllTransactions(accountResponse){
+        let transactionResults = []
+        accountResponse.accounts.forEach(function(value) {
+            let referenceId = value.resourceId;
+            const parameters = {
+                bookingStatus: 'booked'
+               
+            }
+            const get_request_args = querystring.stringify(parameters);
+            const safeEncodedString = URLSafeBase64.encode(new Buffer(get_request_args))
+            console.log(get_request_args);
+            let options = {
+                url: 'https://api-sandbox.rabobank.nl/openapi/sandbox/payments/account-information/ais/v3/accounts/'+referenceId +'/transactions?' +get_request_args,
+                headers: headers,
+                key: fs.readFileSync('key.pem'),
+                cert: fs.readFileSync('cert.pem'), 
+            };
+            let results = request(options,  function(error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    transactionResults.push(JSON.parse(body));
+                    console.log(transactionResults)
+
+                }else{
+                    console.log(body)
+                    transactionResults.push([]);
+                }
+            });
+        });
+        return transactionResults
+    }
 };
