@@ -29,7 +29,10 @@ exports.list_all_transactions = async function (req, res) {
 
     async function callback(error, response, body) {
         if (!error && response.statusCode == 200) {
-            fetchAllTransactions(JSON.parse(body)).then((...results) =>{
+            fetchAllTransactions(JSON.parse(body)).then((results) =>{
+                results.forEach(( result, index ) => {
+                    console.log(result)
+                  });
                 res.json(results)
             })
         } else {
@@ -78,9 +81,6 @@ exports.list_all_transactions = async function (req, res) {
             // handle error
             console.log(error);
             return [];
-          })
-          .then(function () {
-            // always executed
-          });;
+          });
     }
 };
