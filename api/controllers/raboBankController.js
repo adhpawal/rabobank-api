@@ -1,9 +1,11 @@
 const request = require('request');
-const fs = require('fs'); 
+const axios = require('axios');
+const fs = require('fs');
 const querystring = require('querystring');
 const URLSafeBase64 = require('urlsafe-base64');
+var https = require('https')
 
-exports.list_all_transactions = function(req, res) {
+exports.list_all_transactions = async function (req, res) {
     let headers = {
         'accept': 'application/json',
         'authorization': 'Bearer ' + req.query.access_token,
@@ -15,54 +17,70 @@ exports.list_all_transactions = function(req, res) {
         'x-ibm-client-id': req.query.client_id,
         'x-request-id': '95126d8f-ae9d-4ac3-ac9e-c357dcd78811'
     };
-    
+
     let options = {
         url: 'https://api-sandbox.rabobank.nl/openapi/sandbox/payments/account-information/ais/v3/accounts',
         headers: headers,
         key: fs.readFileSync('key.pem'),
-        cert: fs.readFileSync('cert.pem'), 
+        cert: fs.readFileSync('cert.pem'),
     };
 
     request(options, callback);
 
-    function callback(error, response, body) {
+    async function callback(error, response, body) {
         if (!error && response.statusCode == 200) {
-            let results = fetchAllTransactions(JSON.parse(body))
-            console.log(results)
-            res.json(results)
-        }else{
+            fetchAllTransactions(JSON.parse(body)).then((...results) =>{
+                res.json(results)
+            })
+        } else {
             res.json(JSON.parse(body));
         }
     }
 
-    function fetchAllTransactions(accountResponse){
+    async function fetchAllTransactions(accountResponse) {
         let transactionResults = []
-        accountResponse.accounts.forEach(function(value) {
-            let referenceId = value.resourceId;
-            const parameters = {
-                bookingStatus: 'booked'
-               
-            }
-            const get_request_args = querystring.stringify(parameters);
-            const safeEncodedString = URLSafeBase64.encode(new Buffer(get_request_args))
-            console.log(get_request_args);
-            let options = {
-                url: 'https://api-sandbox.rabobank.nl/openapi/sandbox/payments/account-information/ais/v3/accounts/'+referenceId +'/transactions?' +get_request_args,
-                headers: headers,
-                key: fs.readFileSync('key.pem'),
-                cert: fs.readFileSync('cert.pem'), 
-            };
-            let results = request(options,  function(error, response, body) {
-                if (!error && response.statusCode == 200) {
-                    transactionResults.push(JSON.parse(body));
-                    console.log(transactionResults)
+        let accountDetails = accountResponse.accounts;
+        let promises = []
+        for (let i = 0; i < accountDetails.length; i++) {
+            let referenceId = accountDetails[i].resourceId;
+            promises.push(fetchTransactionByAccountId(referenceId));
+        }
 
-                }else{
-                    console.log(body)
-                    transactionResults.push([]);
-                }
-            });
-        });
-        return transactionResults
+        return Promise.all(promises);
+    }
+
+    async function fetchTransactionByAccountId(referenceId) {
+        const parameters = {
+            bookingStatus: 'booked'
+        }
+        const get_request_args = querystring.stringify(parameters);
+        const safeEncodedString = URLSafeBase64.encode(new Buffer(get_request_args))
+        console.log(get_request_args);
+        let options = {
+            url: 'https://api-sandbox.rabobank.nl/openapi/sandbox/payments/account-information/ais/v3/accounts/' + referenceId + '/transactions?' + get_request_args,
+            method: 'get',
+            headers: headers
+        };
+
+        var instance = axios.create({
+            httpsAgent: new https.Agent({
+                cert: fs.readFileSync('cert.pem'),
+                key: fs.readFileSync('key.pem'),
+                rejectUnauthorized: false
+            })
+        })
+        return instance(options).then(function (response) {
+            // handle success
+            console.log(response.data);
+            return response.data;
+          })
+          .catch(function (error) {
+            // handle error
+            console.log(error);
+            return [];
+          })
+          .then(function () {
+            // always executed
+          });;
     }
 };
