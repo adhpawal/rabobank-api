@@ -3,7 +3,8 @@ const axios = require('axios');
 const fs = require('fs');
 const querystring = require('querystring');
 const URLSafeBase64 = require('urlsafe-base64');
-var https = require('https')
+const https = require('https')
+const path = require("path");
 
 exports.list_all_transactions = async function (req, res) {
     let headers = {
@@ -21,18 +22,15 @@ exports.list_all_transactions = async function (req, res) {
     let options = {
         url: 'https://api-sandbox.rabobank.nl/openapi/sandbox/payments/account-information/ais/v3/accounts',
         headers: headers,
-        key: fs.readFileSync('key.pem'),
-        cert: fs.readFileSync('cert.pem'),
+        key: fs.readFileSync(path.resolve(__dirname, "../../key.pem")),
+        cert: fs.readFileSync(path.resolve(__dirname, "../../cert.pem")),
     };
 
     request(options, callback);
 
     async function callback(error, response, body) {
         if (!error && response.statusCode == 200) {
-            fetchAllTransactions(JSON.parse(body)).then((results) =>{
-                results.forEach(( result, index ) => {
-                    console.log(result)
-                  });
+            fetchAllTransactions(JSON.parse(body)).then((results) => {
                 res.json(results)
             })
         } else {
@@ -58,7 +56,6 @@ exports.list_all_transactions = async function (req, res) {
         }
         const get_request_args = querystring.stringify(parameters);
         const safeEncodedString = URLSafeBase64.encode(new Buffer(get_request_args))
-        console.log(get_request_args);
         let options = {
             url: 'https://api-sandbox.rabobank.nl/openapi/sandbox/payments/account-information/ais/v3/accounts/' + referenceId + '/transactions?' + get_request_args,
             method: 'get',
@@ -67,8 +64,8 @@ exports.list_all_transactions = async function (req, res) {
 
         var instance = axios.create({
             httpsAgent: new https.Agent({
-                cert: fs.readFileSync('cert.pem'),
-                key: fs.readFileSync('key.pem'),
+                key: fs.readFileSync(path.resolve(__dirname, "../../key.pem")),
+                cert: fs.readFileSync(path.resolve(__dirname, "../../cert.pem")),
                 rejectUnauthorized: false
             })
         })
@@ -76,11 +73,10 @@ exports.list_all_transactions = async function (req, res) {
             // handle success
             console.log(response.data);
             return response.data;
-          })
-          .catch(function (error) {
+        }).catch(function (error) {
             // handle error
             console.log(error);
             return [];
-          });
+        });
     }
 };

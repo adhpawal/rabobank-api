@@ -1,7 +1,7 @@
-exports.routesConfig  = function(app) {
+exports.routesConfig = function (app) {
   var raboService = require('../controllers/raboBankController');
 
-  // todoList Routes
+  // tranasction Routes
   app.route('/transactions')
     .get(raboService.list_all_transactions);
 };
