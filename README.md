@@ -1,2 +1,10 @@
 # rabobank-api
 Rabo Bank Node Application
+
+## Installation Instruction
+npm install
+npm start
+
+## API Access
+
+Get http://localhost:3000/transactions?access_token=AAIkODBhNzcyOTgtMTkzYi00YzAzLWI0NTMtMjllOWVhZDVjZTZjmEBIiirTfVEIyWO3FxR1x21CiFZOec1DhyoY3A5HjBGow6CkURs3_yTONFhsK0rc5QRgjK5GLne9yjd7DKv4_X-snn2w1N_3H1y9WYjAKeO7HMOwMnxehpLnFSYRvEexuESyPQxKfB3v6XseyjToFWmHFbOt6_Uw5vz-czqOYY1_7OIIQ3Y7lGwIvjxmX7aN19YYqhzrtLnH_KsdYeOpwA
