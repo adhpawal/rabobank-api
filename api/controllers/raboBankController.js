@@ -5,6 +5,7 @@ const querystring = require('querystring');
 const URLSafeBase64 = require('urlsafe-base64');
 const https = require('https')
 const path = require("path");
+const crypto = require("crypto")
 
 exports.list_all_transactions = async function (req, res) {
     let headers = {
@@ -78,5 +79,18 @@ exports.list_all_transactions = async function (req, res) {
             console.log(error);
             return [];
         });
+    }
+
+    function generateSignature(message){
+        // message = "date: Tue, 18 Sep 2018 09:51:01 GMT\ndigest: sha-512=z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcg/SpIdNs6c5H0NE8XYXysP+DGNKHfuwvY7kxvUdBeoGlODJ6+SfaPg==\nx-request-id: 95126d8f-ae9d-4ac3-ac9e-c357dcd78811"
+        var key = fs.readFileSync(path.resolve(__dirname, "../../key.pem"));
+
+        // sign String
+        var signerObject = crypto.createSign("RSA-SHA512");
+        signerObject.update(message);
+        var signature = signerObject.sign(key, "base64");
+        console.log("signature: ", signature)
+
+        return signature;
     }
 };
